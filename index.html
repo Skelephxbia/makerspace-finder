@@ -164,38 +164,6 @@
   .msi2-swatch{
     width:9px; height:9px; border-radius:2px; flex-shrink:0;
   }
-
-  /* Report modal */
-  .msi2-modal-backdrop{
-    position:fixed; inset:0; background:rgba(0,0,0,0.55);
-    display:none; align-items:center; justify-content:center; z-index:50;
-  }
-  .msi2-modal-backdrop.open{ display:flex; }
-  .msi2-modal{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:8px;
-    padding:20px;
-    width:280px;
-    color:var(--text);
-    font-family:inherit;
-  }
-  .msi2-modal h4{ margin:0 0 4px; font-size:13px; color:var(--yellow); }
-  .msi2-modal p{ margin:0 0 12px; font-size:11px; color:var(--muted); }
-  .msi2-modal textarea{
-    width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text);
-    border-radius:5px; padding:8px; font-family:inherit; font-size:12px; resize:vertical; min-height:60px;
-  }
-  .msi2-modal-actions{
-    display:flex; gap:8px; margin-top:12px; justify-content:flex-end;
-  }
-  .msi2-modal-actions button{
-    font-family:inherit; font-size:11px; padding:6px 12px; border-radius:5px; cursor:pointer; border:1px solid var(--line);
-    background:var(--bg); color:var(--text);
-  }
-  .msi2-modal-actions button.primary{
-    background:var(--yellow); color:#1a1c1e; border-color:var(--yellow); font-weight:700;
-  }
 </style>
 
 <div class="msi2-root">
@@ -241,18 +209,6 @@
   </div>
 </div>
 
-<div class="msi2-modal-backdrop" id="msi2ModalBackdrop">
-  <div class="msi2-modal">
-    <h4 id="msi2ModalTitle">Report an issue</h4>
-    <p>This lets a mentor know without you having to track them down. Optional note.</p>
-    <textarea id="msi2ModalNote" placeholder="e.g. bin was empty, wrong item in slot..."></textarea>
-    <div class="msi2-modal-actions">
-      <button id="msi2ModalCancel">Cancel</button>
-      <button class="primary" id="msi2ModalSubmit">Send report</button>
-    </div>
-  </div>
-</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
 (function(){
@@ -267,10 +223,8 @@
   // prefilled link (⋮ menu > Get pre-filled link), pull the entry.NNNNN ids
   // from the URL it gives you and plug them in below.
   // ---------------------------------------------------------------------
-  var SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqDUoyAOOzfJa3Y-ZV36W38qzJmRuwjm8dKqFL3Mttc-SebOuuurUQ7dCs9Lg4yzFpHgxPapFgG4pJ/pub?gid=0&single=true&output=csv"; // e.g. "https://docs.google.com/spreadsheets/d/e/XXXX/pub?output=csv"
-  var REPORT_FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSfpGM3tSwjdYu-TqivDfAFzr-Ts0H-5QGqhw2dJ_6DM7zqjWw/viewform?usp=dialog"; // e.g. "https://docs.google.com/forms/d/e/XXXX/viewform"
-  var REPORT_FORM_ITEM_ENTRY = "entry.111111"; // entry id for the "Item" field
-  var REPORT_FORM_NOTE_ENTRY = "entry.222222"; // entry id for the "Note" field
+  var SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqDUoyAOOzfJa3Y-ZV36W38qzJmRuwjm8dKqFL3Mttc-SebOuuurUQ7dCs9Lg4yzFpHgxPapFgG4pJ/pub?gid=0&single=true&output=csv";
+  var REPORT_FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSfpGM3tSwjdYu-TqivDfAFzr-Ts0H-5QGqhw2dJ_6DM7zqjWw/viewform";
 
   var CATEGORY_COLORS = {
     electronics:'#4fb0a5', wood:'#c98a4b', hardware:'#6b8fa3',
@@ -304,14 +258,7 @@
   var inputEl = document.getElementById('msi2Input');
   var legendEl = document.getElementById('msi2Legend');
   var mapEl = document.getElementById('msi2Map');
-  var modalBackdrop = document.getElementById('msi2ModalBackdrop');
-  var modalTitle = document.getElementById('msi2ModalTitle');
-  var modalNote = document.getElementById('msi2ModalNote');
-  var modalCancel = document.getElementById('msi2ModalCancel');
-  var modalSubmit = document.getElementById('msi2ModalSubmit');
-
   var DATA = [];
-  var pendingReportItem = null;
 
   function renderLegend(){
     var html = '';
@@ -332,32 +279,15 @@
     mapEl.querySelectorAll('.msi2-zone').forEach(function(z){ z.classList.remove('active'); });
   }
 
-  function openReportModal(itemName){
-    pendingReportItem = itemName;
-    modalTitle.textContent = 'Report: ' + itemName;
-    modalNote.value = '';
-    modalBackdrop.classList.add('open');
-  }
-  function closeReportModal(){
-    modalBackdrop.classList.remove('open');
-    pendingReportItem = null;
-  }
-  modalCancel.addEventListener('click', closeReportModal);
-  modalBackdrop.addEventListener('click', function(e){ if (e.target === modalBackdrop) closeReportModal(); });
-
-  modalSubmit.addEventListener('click', function(){
-    var note = modalNote.value.trim();
+  // Reporting just opens the real form in a new tab — the form itself
+  // collects whatever detail is needed, so nothing to prefill or hold state for here.
+  function openReportForm(){
     if (REPORT_FORM_BASE) {
-      var url = REPORT_FORM_BASE + '?usp=pp_url'
-        + '&' + REPORT_FORM_ITEM_ENTRY + '=' + encodeURIComponent(pendingReportItem)
-        + '&' + REPORT_FORM_NOTE_ENTRY + '=' + encodeURIComponent(note);
-      window.open(url, '_blank');
+      window.open(REPORT_FORM_BASE, '_blank');
     } else {
-      // Demo fallback — no real form configured yet.
-      alert('Demo mode: no Google Form connected yet.\n\nWould report:\nItem: ' + pendingReportItem + '\nNote: ' + (note || '(none)'));
+      alert('Demo mode: no Google Form connected yet.');
     }
-    closeReportModal();
-  });
+  }
 
   function renderResults(list, query){
     if (!list.length) {
@@ -383,23 +313,23 @@
         + '<div class="msi2-result-name">' + row.item + '</div>'
         + '<div class="msi2-result-loc">' + row.location + '</div>'
         + tagsHtml
-        + '<div><button class="msi2-report-btn" data-report="' + row.item.replace(/"/g,'&quot;') + '">Report empty / missing</button></div>'
+        + '<div><button class="msi2-report-btn">Report empty / missing</button></div>'
         + '</div>';
     });
     resultsEl.innerHTML = html;
 
     resultsEl.querySelectorAll('.msi2-result').forEach(function(el){
       el.addEventListener('click', function(e){
-        if (e.target.dataset.report) return; // let the report button handle its own click
+        if (e.target.classList.contains('msi2-report-btn')) return; // let the report button handle its own click
         resultsEl.querySelectorAll('.msi2-result').forEach(function(r){ r.classList.remove('active'); });
         el.classList.add('active');
         setActiveZone(el.getAttribute('data-zone'));
       });
     });
-    resultsEl.querySelectorAll('[data-report]').forEach(function(btn){
+    resultsEl.querySelectorAll('.msi2-report-btn').forEach(function(btn){
       btn.addEventListener('click', function(e){
         e.stopPropagation();
-        openReportModal(btn.getAttribute('data-report'));
+        openReportForm();
       });
     });
 
@@ -453,9 +383,15 @@
   });
 
   if (SHEET_CSV_URL) {
-    Papa.parse(SHEET_CSV_URL, {
+    // Cache-bust: Google's publish link and some browsers/CDNs cache the CSV,
+    // so edits to the Sheet can take a bit to show up otherwise.
+    var bustedUrl = SHEET_CSV_URL + (SHEET_CSV_URL.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
+    Papa.parse(bustedUrl, {
       download: true,
       header: true,
+      // Strips stray whitespace and a possible leading BOM character from
+      // header names, both of which can silently break the r.Item lookups.
+      transformHeader: function(h){ return h.replace(/^\uFEFF/, '').trim(); },
       complete: function(results){
         var rows = normalizeRows(results.data);
         if (rows.length) boot(rows, 'Live from Sheet');
