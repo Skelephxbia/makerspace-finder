@@ -14,6 +14,12 @@
     --textile:#8b7bb8;
   }
   * { box-sizing: border-box; }
+  html, body{
+    background:var(--bg);
+    margin:0;
+    padding:12px;
+    min-height:100%;
+  }
   .msi2-root{
     background:var(--bg);
     color:var(--text);
@@ -52,6 +58,19 @@
     outline:none;
   }
   .msi2-search input:focus{ border-color:var(--yellow); }
+  .msi2-topbtn{
+    flex-shrink:0;
+    font-family:inherit;
+    font-size:11px;
+    color:var(--yellow);
+    border:1px solid var(--yellow);
+    background:none;
+    padding:0 12px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .msi2-topbtn:hover{ background:rgba(242,193,78,0.12); }
   .msi2-status{
     font-size:10px;
     color:var(--muted);
@@ -147,6 +166,19 @@
     font-weight:700;
     pointer-events:none;
   }
+  /* For room outlines, cage boundaries, walls, doors, or any other line that's
+     just visual context — NOT an item location. These are deliberately left
+     out of .msi2-zone so the JS never touches, highlights, or matches them. */
+  .msi2-structure{
+    fill:none;
+    stroke:var(--text);
+    stroke-width:1.5;
+    opacity:0.8;
+  }
+  .msi2-structure.dashed{
+    stroke-dasharray:4,3;
+    opacity:0.5;
+  }
   .msi2-legend{
     display:flex;
     flex-wrap:wrap;
@@ -171,6 +203,7 @@
     <div class="msi2-title">Makerspace Locator <span>// find a part</span></div>
     <div class="msi2-search">
       <input type="text" id="msi2Input" placeholder="try: screwdriver, filament, acrylic..." autocomplete="off">
+      <button class="msi2-topbtn" id="msi2RequestBtn">+ Request item</button>
     </div>
     <div class="msi2-status" id="msi2Status">Loading inventory…</div>
   </div>
@@ -179,9 +212,25 @@
     <div class="msi2-map-wrap">
       <svg viewBox="0 0 300 200" id="msi2Map">
         <!-- PLACEHOLDER SCHEMATIC MAP — replace this whole <svg> with your traced Inkscape export.
-             Each zone needs: class="msi2-zone", a fill matching its category color, and
-             data-zone="xxxx" matching the "Map Zone" column in your Sheet. -->
-        <rect x="4" y="4" width="292" height="192" fill="none" stroke="#3a3d40" stroke-width="1"/>
+
+             Two kinds of elements go in here:
+
+             1) STORAGE ZONES — clickable, highlightable, searchable.
+                class="msi2-zone" + fill="#somecolor" + data-zone="xxxx"
+                (data-zone must match the "MapZone" column in your Sheet)
+
+             2) STRUCTURE — room outline, cage boundary, walls, doors: purely
+                visual context. class="msi2-structure" (add "dashed" for a
+                dashed line like a sub-boundary). No data-zone, no fill —
+                these are never touched by search or click logic. -->
+
+        <!-- room outline -->
+        <rect class="msi2-structure" x="4" y="4" width="292" height="192" rx="2"/>
+
+        <!-- example: a "cage" sub-area that's part of the room but not itself
+             a storage zone — just a boundary line for context -->
+        <rect class="msi2-structure dashed" x="222" y="14" width="66" height="80" rx="2"/>
+        <text x="255" y="10" text-anchor="middle" font-size="7" fill="var(--muted)" font-family="ui-monospace, monospace">CAGE</text>
 
         <rect class="msi2-zone" data-zone="electronics" x="12" y="14" width="70" height="80" rx="4" fill="#4fb0a5"/>
         <text class="msi2-zone-label" x="47" y="58" text-anchor="middle">ELEC</text>
@@ -225,6 +274,10 @@
   // ---------------------------------------------------------------------
   var SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSqDUoyAOOzfJa3Y-ZV36W38qzJmRuwjm8dKqFL3Mttc-SebOuuurUQ7dCs9Lg4yzFpHgxPapFgG4pJ/pub?gid=0&single=true&output=csv";
   var REPORT_FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSfpGM3tSwjdYu-TqivDfAFzr-Ts0H-5QGqhw2dJ_6DM7zqjWw/viewform";
+  // Same underlying form. If you grab a pre-filled link (⋮ menu > Get pre-filled
+  // link) with "Personal Project" or a new "Requesting new item" option already
+  // selected, swap it in here so this button opens pre-answered.
+  var MATERIALS_REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfpGM3tSwjdYu-TqivDfAFzr-Ts0H-5QGqhw2dJ_6DM7zqjWw/viewform";
 
   var CATEGORY_COLORS = {
     electronics:'#4fb0a5', wood:'#c98a4b', hardware:'#6b8fa3',
@@ -279,20 +332,27 @@
     mapEl.querySelectorAll('.msi2-zone').forEach(function(z){ z.classList.remove('active'); });
   }
 
-  // Reporting just opens the real form in a new tab — the form itself
-  // collects whatever detail is needed, so nothing to prefill or hold state for here.
-  function openReportForm(){
-    if (REPORT_FORM_BASE) {
-      window.open(REPORT_FORM_BASE, '_blank');
+  // Opens any of the shop's Google Forms in a new tab. Both report and
+  // request flows just link out — the form itself collects the detail.
+  function openForm(url){
+    if (url) {
+      window.open(url, '_blank');
     } else {
       alert('Demo mode: no Google Form connected yet.');
     }
   }
 
+  document.getElementById('msi2RequestBtn').addEventListener('click', function(){
+    openForm(MATERIALS_REQUEST_FORM_URL);
+  });
+
   function renderResults(list, query){
     if (!list.length) {
-      resultsEl.innerHTML = '<div class="msi2-empty">No matches' + (query ? ' for "' + query + '"' : '') + '. Try a category name, or browse the map to see what\'s in each zone.</div>';
+      resultsEl.innerHTML = '<div class="msi2-empty">No matches' + (query ? ' for "' + query + '"' : '') + '. Try a category name, or browse the map to see what\'s in each zone.'
+        + '<div style="margin-top:10px;"><button class="msi2-topbtn" id="msi2EmptyRequestBtn">+ Request this be added</button></div></div>';
       clearZones();
+      var emptyBtn = document.getElementById('msi2EmptyRequestBtn');
+      if (emptyBtn) emptyBtn.addEventListener('click', function(){ openForm(MATERIALS_REQUEST_FORM_URL); });
       return;
     }
     var html = '';
@@ -329,7 +389,7 @@
     resultsEl.querySelectorAll('.msi2-report-btn').forEach(function(btn){
       btn.addEventListener('click', function(e){
         e.stopPropagation();
-        openReportForm();
+        openForm(REPORT_FORM_BASE);
       });
     });
 
