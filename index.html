@@ -325,7 +325,7 @@
 
   function search(query){
     query = (query || '').trim().toLowerCase();
-    if (!query) { renderResults(DATA.slice(0, 6), ''); return; }
+    if (!query) { renderResults(DATA, ''); return; }
     var matches = DATA.filter(function(row){
       var hay = (row.item + ' ' + row.aliases).toLowerCase();
       return hay.indexOf(query) !== -1;
