@@ -210,49 +210,10 @@
   <div class="msi2-body">
     <div class="msi2-results" id="msi2Results"></div>
     <div class="msi2-map-wrap">
-      <svg viewBox="0 0 300 200" id="msi2Map">
-        <!-- PLACEHOLDER SCHEMATIC MAP — replace this whole <svg> with your traced Inkscape export.
-
-             Two kinds of elements go in here:
-
-             1) STORAGE ZONES — clickable, highlightable, searchable.
-                class="msi2-zone" + fill="#somecolor" + data-zone="xxxx"
-                (data-zone must match the "MapZone" column in your Sheet)
-
-             2) STRUCTURE — room outline, cage boundary, walls, doors: purely
-                visual context. class="msi2-structure" (add "dashed" for a
-                dashed line like a sub-boundary). No data-zone, no fill —
-                these are never touched by search or click logic. -->
-
-        <!-- room outline -->
-        <rect class="msi2-structure" x="4" y="4" width="292" height="192" rx="2"/>
-
-        <!-- example: a "cage" sub-area that's part of the room but not itself
-             a storage zone — just a boundary line for context -->
-        <rect class="msi2-structure dashed" x="222" y="14" width="66" height="80" rx="2"/>
-        <text x="255" y="10" text-anchor="middle" font-size="7" fill="var(--muted)" font-family="ui-monospace, monospace">CAGE</text>
-
-        <rect class="msi2-zone" data-zone="electronics" x="12" y="14" width="70" height="80" rx="4" fill="#4fb0a5"/>
-        <text class="msi2-zone-label" x="47" y="58" text-anchor="middle">ELEC</text>
-
-        <rect class="msi2-zone" data-zone="wood" x="92" y="14" width="55" height="50" rx="4" fill="#c98a4b"/>
-        <text class="msi2-zone-label" x="119" y="42" text-anchor="middle">WOOD</text>
-
-        <rect class="msi2-zone" data-zone="hardware" x="157" y="14" width="55" height="50" rx="4" fill="#6b8fa3"/>
-        <text class="msi2-zone-label" x="184" y="42" text-anchor="middle">HDW</text>
-
-        <rect class="msi2-zone" data-zone="laser" x="222" y="14" width="66" height="80" rx="4" fill="#b5567a"/>
-        <text class="msi2-zone-label" x="255" y="58" text-anchor="middle">LASER</text>
-
-        <rect class="msi2-zone" data-zone="filament" x="92" y="74" width="55" height="112" rx="4" fill="#7fae59"/>
-        <text class="msi2-zone-label" x="119" y="132" text-anchor="middle">PRINT</text>
-
-        <rect class="msi2-zone" data-zone="textile" x="157" y="104" width="55" height="82" rx="4" fill="#8b7bb8"/>
-        <text class="msi2-zone-label" x="184" y="148" text-anchor="middle">FABRIC</text>
-
-        <rect class="msi2-zone" data-zone="entrance" x="222" y="104" width="66" height="82" rx="4" fill="#3a3d40"/>
-        <text class="msi2-zone-label" x="255" y="148" text-anchor="middle" fill="#e8e6e1">ENTRY</text>
-      </svg>
+      <!-- The actual map lives in a separate file: map.svg, sitting next to
+           this html file in the repo. Edit/re-export that file on its own —
+           the code below loads whatever's in it at page load. -->
+      <div id="msi2Map"></div>
       <div class="msi2-legend" id="msi2Legend"></div>
     </div>
   </div>
@@ -310,7 +271,18 @@
   var statusEl = document.getElementById('msi2Status');
   var inputEl = document.getElementById('msi2Input');
   var legendEl = document.getElementById('msi2Legend');
-  var mapEl = document.getElementById('msi2Map');
+  var mapEl = document.getElementById('msi2Map'); // container div — gets filled below
+
+  // Used only if map.svg is missing/unreachable, so the page still shows something.
+  var FALLBACK_MAP_SVG = '<svg viewBox="0 0 300 200">'
+    + '<rect class="msi2-structure" x="4" y="4" width="292" height="192" rx="2"/>'
+    + '<text x="150" y="105" text-anchor="middle" fill="var(--muted)" font-size="9" font-family="ui-monospace, monospace">map.svg not found — using placeholder</text>'
+    + '</svg>';
+
+  fetch('map.svg')
+    .then(function(res){ if (!res.ok) throw new Error('not found'); return res.text(); })
+    .then(function(svgText){ mapEl.innerHTML = svgText; })
+    .catch(function(){ mapEl.innerHTML = FALLBACK_MAP_SVG; });
   var DATA = [];
 
   function renderLegend(){
@@ -407,7 +379,12 @@
     renderResults(matches, query);
   }
 
-  inputEl.addEventListener('input', function(){ search(inputEl.value); });
+  var searchDebounceTimer = null;
+  inputEl.addEventListener('input', function(){
+    clearTimeout(searchDebounceTimer);
+    var val = inputEl.value;
+    searchDebounceTimer = setTimeout(function(){ search(val); }, 120);
+  });
 
   function normalizeRows(rows){
     return rows.map(function(r){
@@ -445,7 +422,11 @@
   if (SHEET_CSV_URL) {
     // Cache-bust: Google's publish link and some browsers/CDNs cache the CSV,
     // so edits to the Sheet can take a bit to show up otherwise.
-    var bustedUrl = SHEET_CSV_URL + (SHEET_CSV_URL.indexOf('?') === -1 ? '?' : '&') + '_ts=' + Date.now();
+    // Cache-bust in 5-minute buckets rather than on every load — this still
+    // picks up Sheet edits within a few minutes, but lets repeat visits within
+    // that window hit the browser cache instead of re-downloading every time.
+    var cacheBucket = Math.floor(Date.now() / (5 * 60 * 1000));
+    var bustedUrl = SHEET_CSV_URL + (SHEET_CSV_URL.indexOf('?') === -1 ? '?' : '&') + '_ts=' + cacheBucket;
     Papa.parse(bustedUrl, {
       download: true,
       header: true,
