@@ -1,3 +1,5 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#1a1c1e;
@@ -12,6 +14,7 @@
     --laser:#b5567a;
     --filament:#7fae59;
     --textile:#8b7bb8;
+    --font: 'IBM Plex Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; }
   html, body{
@@ -23,7 +26,7 @@
   .msi2-root{
     background:var(--bg);
     color:var(--text);
-    font-family: ui-monospace, "SF Mono", "Courier New", monospace;
+    font-family: var(--font);
     border-radius:8px;
     overflow:hidden;
     border:1px solid var(--line);
@@ -106,17 +109,6 @@
     color:var(--muted);
     margin-bottom:6px;
   }
-  .msi2-tag{
-    display:inline-block;
-    font-size:9px;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    padding:2px 7px;
-    border-radius:10px;
-    color:#111;
-    font-weight:700;
-    margin:0 4px 4px 0;
-  }
   .msi2-report-btn{
     display:inline-block;
     margin-top:8px;
@@ -160,7 +152,7 @@
     filter:drop-shadow(0 0 6px currentColor);
   }
   .msi2-zone-label{
-    font-family: ui-monospace, monospace;
+    font-family: var(--font);
     font-size:8.5px;
     fill:#1a1c1e;
     font-weight:700;
@@ -178,23 +170,6 @@
   .msi2-structure.dashed{
     stroke-dasharray:4,3;
     opacity:0.5;
-  }
-  .msi2-legend{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    justify-content:center;
-    margin-top:14px;
-  }
-  .msi2-legend-item{
-    display:flex;
-    align-items:center;
-    gap:5px;
-    font-size:10px;
-    color:var(--muted);
-  }
-  .msi2-swatch{
-    width:9px; height:9px; border-radius:2px; flex-shrink:0;
   }
 </style>
 
@@ -214,7 +189,6 @@
            this html file in the repo. Edit/re-export that file on its own —
            the code below loads whatever's in it at page load. -->
       <div id="msi2Map"></div>
-      <div class="msi2-legend" id="msi2Legend"></div>
     </div>
   </div>
 </div>
@@ -240,37 +214,24 @@
   // selected, swap it in here so this button opens pre-answered.
   var MATERIALS_REQUEST_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfpGM3tSwjdYu-TqivDfAFzr-Ts0H-5QGqhw2dJ_6DM7zqjWw/viewform";
 
-  var CATEGORY_COLORS = {
-    electronics:'#4fb0a5', wood:'#c98a4b', hardware:'#6b8fa3',
-    laser:'#b5567a', filament:'#7fae59', textile:'#8b7bb8', entrance:'#3a3d40'
-  };
-  var CATEGORY_LABELS = {
-    electronics:'Electronics', wood:'Wood Storage', hardware:'Hardware',
-    laser:'Laser Materials', filament:'Print Filament', textile:'Textiles'
-  };
-
   // Fallback sample data — used if SHEET_CSV_URL is empty or unreachable,
   // so this demo works standalone. Shape matches what the Sheet should contain.
   var FALLBACK_DATA = [
-    { item:'Phillips/Flathead Screwdriver Set', aliases:'screwdriver, driver', category:'hardware, tools', location:'Hardware Wall, Bin C1, top row', zone:'hardware' },
-    { item:'Wire Strippers', aliases:'stripper, cutter', category:'electronics, tools', location:'Electronics Rack, Shelf 1, left bin', zone:'electronics' },
-    { item:'Soldering Iron', aliases:'solder, iron', category:'electronics, tools', location:'Electronics Rack, Shelf 2, wall mount', zone:'electronics' },
-    { item:'PLA Filament — Black', aliases:'filament, pla, plastic', category:'filament, consumable', location:'Print Station, Filament Shelf 1', zone:'filament' },
-    { item:'Acrylic Sheet 3mm Clear', aliases:'acrylic, plexiglass, laser stock', category:'laser, consumable', location:'Laser Station, Materials Rack, slot 2', zone:'laser' },
-    { item:'M3 Screws', aliases:'screws, fasteners, m3', category:'hardware, consumable', location:'Hardware Wall, Bin C1, bottom row', zone:'hardware' },
-    { item:'Wool Felt Sheets', aliases:'felt, embroidery backing', category:'textile, consumable', location:'Textile Bench, Drawer 1', zone:'textile' },
-    { item:'Plywood Offcuts', aliases:'plywood, wood scraps', category:'wood, consumable', location:'Wood Storage, Bin A', zone:'wood' },
-    { item:'Hot Glue Gun', aliases:'glue gun, hot glue', category:'hardware, tools', location:'Hardware Wall, Bin C2, hanging', zone:'hardware' },
-    { item:'Multimeter', aliases:'meter, voltmeter', category:'electronics, tools', location:'Electronics Rack, Shelf 3, right bin', zone:'electronics' }
+    { item:'Phillips/Flathead Screwdriver Set', aliases:'screwdriver, driver', location:'Hardware Wall, Bin C1, top row', zone:'hardware' },
+    { item:'Wire Strippers', aliases:'stripper, cutter', location:'Electronics Rack, Shelf 1, left bin', zone:'electronics' },
+    { item:'Soldering Iron', aliases:'solder, iron', location:'Electronics Rack, Shelf 2, wall mount', zone:'electronics' },
+    { item:'PLA Filament — Black', aliases:'filament, pla, plastic', location:'Print Station, Filament Shelf 1', zone:'filament' },
+    { item:'Acrylic Sheet 3mm Clear', aliases:'acrylic, plexiglass, laser stock', location:'Laser Station, Materials Rack, slot 2', zone:'laser' },
+    { item:'M3 Screws', aliases:'screws, fasteners, m3', location:'Hardware Wall, Bin C1, bottom row', zone:'hardware' },
+    { item:'Wool Felt Sheets', aliases:'felt, embroidery backing', location:'Textile Bench, Drawer 1', zone:'textile' },
+    { item:'Plywood Offcuts', aliases:'plywood, wood scraps', location:'Wood Storage, Bin A', zone:'wood' },
+    { item:'Hot Glue Gun', aliases:'glue gun, hot glue', location:'Hardware Wall, Bin C2, hanging', zone:'hardware' },
+    { item:'Multimeter', aliases:'meter, voltmeter', location:'Electronics Rack, Shelf 3, right bin', zone:'electronics' }
   ];
-
-  var root = document.currentScript.previousElementSibling.previousElementSibling.previousElementSibling ?
-             null : null; // unused, kept simple below
 
   var resultsEl = document.getElementById('msi2Results');
   var statusEl = document.getElementById('msi2Status');
   var inputEl = document.getElementById('msi2Input');
-  var legendEl = document.getElementById('msi2Legend');
   var mapEl = document.getElementById('msi2Map'); // container div — gets filled below
 
   // Used only if map.svg is missing/unreachable, so the page still shows something.
@@ -284,14 +245,6 @@
     .then(function(svgText){ mapEl.innerHTML = svgText; })
     .catch(function(){ mapEl.innerHTML = FALLBACK_MAP_SVG; });
   var DATA = [];
-
-  function renderLegend(){
-    var html = '';
-    Object.keys(CATEGORY_LABELS).forEach(function(k){
-      html += '<div class="msi2-legend-item"><div class="msi2-swatch" style="background:'+CATEGORY_COLORS[k]+'"></div>'+CATEGORY_LABELS[k]+'</div>';
-    });
-    legendEl.innerHTML = html;
-  }
 
   function setActiveZone(zone){
     var zones = mapEl.querySelectorAll('.msi2-zone');
@@ -320,7 +273,7 @@
 
   function renderResults(list, query){
     if (!list.length) {
-      resultsEl.innerHTML = '<div class="msi2-empty">No matches' + (query ? ' for "' + query + '"' : '') + '. Try a category name, or browse the map to see what\'s in each zone.'
+      resultsEl.innerHTML = '<div class="msi2-empty">No matches' + (query ? ' for "' + query + '"' : '') + '. Try a different name, or browse the map to see what\'s in each zone.'
         + '<div style="margin-top:10px;"><button class="msi2-topbtn" id="msi2EmptyRequestBtn">+ Request this be added</button></div></div>';
       clearZones();
       var emptyBtn = document.getElementById('msi2EmptyRequestBtn');
@@ -329,22 +282,9 @@
     }
     var html = '';
     list.forEach(function(row, i){
-      var tagsHtml = row.category.map(function(cat){
-        var color = CATEGORY_COLORS[cat];
-        var label = CATEGORY_LABELS[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1));
-        // Zone categories (electronics, wood, hardware...) get a solid color chip
-        // matching the map. Cross-cutting tags (tools, consumable...) that aren't
-        // tied to a physical zone get a neutral outlined chip instead.
-        if (color) {
-          return '<span class="msi2-tag" style="background:' + color + '">' + label + '</span>';
-        }
-        return '<span class="msi2-tag" style="background:none;border:1px solid var(--line);color:var(--muted)">' + label + '</span>';
-      }).join(' ');
-
       html += '<div class="msi2-result" data-idx="' + i + '" data-zone="' + row.zone + '">'
         + '<div class="msi2-result-name">' + row.item + '</div>'
         + '<div class="msi2-result-loc">' + row.location + '</div>'
-        + tagsHtml
         + '<div><button class="msi2-report-btn">Report empty / missing</button></div>'
         + '</div>';
     });
@@ -373,7 +313,7 @@
     query = (query || '').trim().toLowerCase();
     if (!query) { renderResults(DATA.slice(0, 6), ''); return; }
     var matches = DATA.filter(function(row){
-      var hay = (row.item + ' ' + row.aliases + ' ' + row.category.join(' ')).toLowerCase();
+      var hay = (row.item + ' ' + row.aliases).toLowerCase();
       return hay.indexOf(query) !== -1;
     });
     renderResults(matches, query);
@@ -388,13 +328,9 @@
 
   function normalizeRows(rows){
     return rows.map(function(r){
-      var rawCategory = (r.Category || r.category || '').trim();
       return {
         item: (r.Item || r.item || '').trim(),
         aliases: (r.Aliases || r.aliases || '').trim(),
-        // Category can be a comma-separated list, e.g. "Electronics, Tools" —
-        // these are browse/search tags and can be as many as make sense.
-        category: rawCategory.split(',').map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean),
         location: (r.Location || r.location || '').trim(),
         // Zone is singular — it's the one physical spot this item lives,
         // used to light up the map. Keep this to exactly one value per item.
@@ -406,18 +342,8 @@
   function boot(rows, sourceLabel){
     DATA = rows;
     statusEl.textContent = sourceLabel + ' · ' + DATA.length + ' items';
-    renderLegend();
     search('');
   }
-
-  // Fallback data is authored with comma-string categories for readability above;
-  // normalize it the same way live Sheet rows are normalized.
-  FALLBACK_DATA = FALLBACK_DATA.map(function(r){
-    return {
-      item: r.item, aliases: r.aliases, location: r.location, zone: r.zone,
-      category: r.category.split(',').map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean)
-    };
-  });
 
   if (SHEET_CSV_URL) {
     // Cache-bust: Google's publish link and some browsers/CDNs cache the CSV,
@@ -425,7 +351,7 @@
     // Cache-bust in 5-minute buckets rather than on every load — this still
     // picks up Sheet edits within a few minutes, but lets repeat visits within
     // that window hit the browser cache instead of re-downloading every time.
-    var cacheBucket = Math.floor(Date.now() / (1 * 60 * 1000));
+    var cacheBucket = Math.floor(Date.now() / (5 * 60 * 1000));
     var bustedUrl = SHEET_CSV_URL + (SHEET_CSV_URL.indexOf('?') === -1 ? '?' : '&') + '_ts=' + cacheBucket;
     Papa.parse(bustedUrl, {
       download: true,
