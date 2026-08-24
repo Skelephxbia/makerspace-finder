@@ -175,7 +175,7 @@
 
 <div class="msi2-root">
   <div class="msi2-topbar">
-    <div class="msi2-title">Makerspace Locator <span>// find a part</span></div>
+    <div class="msi2-title">Makerspace Locator <span>- 4-409 student center</span></div>
     <div class="msi2-search">
       <input type="text" id="msi2Input" placeholder="try: screwdriver, filament, acrylic..." autocomplete="off">
       <button class="msi2-topbtn" id="msi2RequestBtn">+ Request item</button>
@@ -361,7 +361,7 @@
       transformHeader: function(h){ return h.replace(/^\uFEFF/, '').trim(); },
       complete: function(results){
         var rows = normalizeRows(results.data);
-        if (rows.length) boot(rows, 'Live from Sheet');
+        if (rows.length) boot(rows, 'Loaded');
         else boot(FALLBACK_DATA, 'Sheet returned no rows — showing sample data');
       },
       error: function(){
