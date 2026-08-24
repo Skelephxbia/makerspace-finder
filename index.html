@@ -425,7 +425,7 @@
     // Cache-bust in 5-minute buckets rather than on every load — this still
     // picks up Sheet edits within a few minutes, but lets repeat visits within
     // that window hit the browser cache instead of re-downloading every time.
-    var cacheBucket = Math.floor(Date.now() / (5 * 60 * 1000));
+    var cacheBucket = Math.floor(Date.now() / (1 * 60 * 1000));
     var bustedUrl = SHEET_CSV_URL + (SHEET_CSV_URL.indexOf('?') === -1 ? '?' : '&') + '_ts=' + cacheBucket;
     Papa.parse(bustedUrl, {
       download: true,
